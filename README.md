@@ -49,7 +49,7 @@
 
 ## 下载
 
-到 [Releases](../../releases) 下载最新的 `JobAid-Setup.exe`。
+到 [Releases](https://github.com/Howard-Peng002/JobAid/releases) 下载最新的 `JobAid-Setup.exe`。
 
 Windows 可能提示「已保护你的电脑」——这是没买代码签名证书导致的，不是病毒。点「更多信息」→「仍要运行」。
 
