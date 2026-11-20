@@ -69,7 +69,7 @@ const RELEASE_BODY = `JobAid 面试练习与复盘助手，Windows 桌面版第�
 | 文件 | 说明 |
 |---|---|
 | \`JobAid-Setup.exe\` | Windows 安装包，约 284MB（内含语音识别模型） |
-| \`使用说明.txt\` | 安装、配置、快捷键、常见问题 |
+| \`JobAid-Usage.txt\` | 安装、配置、快捷键、常见问题 |
 
 ## 安装提示
 
@@ -211,20 +211,40 @@ function die(msg, extra) {
 
   // 3. 推送代码（URL 内嵌凭据，同时禁用 credential helper 以免弹窗）
   const remote = `https://${encodeURIComponent(OWNER)}:${encodeURIComponent(TOKEN)}@github.com/${OWNER}/${REPO}.git`;
-  try {
-    execFileSync(
-      'git',
-      ['-c', 'credential.helper=', 'push', remote, 'main:main', '--force'],
-      {
-        cwd: ROOT,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' },
+  const localSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  let pushed = false;
+  let pushErr = '';
+  for (let attempt = 1; attempt <= 2 && !pushed; attempt += 1) {
+    try {
+      execFileSync(
+        'git',
+        ['-c', 'credential.helper=', 'push', remote, 'main:main', '--force'],
+        {
+          cwd: ROOT,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' },
+        }
+      );
+      pushed = true;
+    } catch (e) {
+      pushErr = (e.stderr || Buffer.from('')).toString().slice(0, 300);
+      if (attempt === 1) {
+        console.log(`[3/5] 推送失败，2 秒后重试…`);
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
       }
-    );
+    }
+  }
+  if (pushed) {
     console.log('[3/5] 代码已推送到 main');
-  } catch (e) {
-    const detail = (e.stderr || Buffer.from('')).toString().slice(0, 500);
-    die('git push 失败', detail);
+  } else {
+    // 网络抖动时，若远端已是最新提交，则视为成功
+    const head = await request('GET', 'api.github.com', `/repos/${OWNER}/${REPO}/commits/main`);
+    const remoteSha = head.status === 200 && head.json ? head.json.sha : null;
+    if (remoteSha === localSha) {
+      console.log(`[3/5] 远端已是最新提交 ${localSha.slice(0, 7)}，跳过推送`);
+    } else {
+      die('git push 失败（远端提交与本地不一致）', `${pushErr}\n远端: ${remoteSha || '未知'}\n本地: ${localSha}`);
+    }
   }
 
   // 4. 创建或复用 Release
