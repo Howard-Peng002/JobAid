@@ -111,7 +111,7 @@ npm start        # 开发模式
 npm run build    # 打 Windows 安装包
 ```
 
-首次启动会自动下载语音识别模型（约 229MB）到 `models/`。
+语音识别依赖 `models/` 目录下的模型文件（约 229MB，安装包已内置）。从源码运行时需自行准备该目录；缺失时只有语音功能不可用，其余功能不受影响。
 
 详细的界面结构与实现说明见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
 
