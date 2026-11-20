@@ -93,6 +93,13 @@ if (!TOKEN) {
   process.exit(1);
 }
 
+if (!/^(ghp_|github_pat_|gho_|ghs_)/.test(TOKEN)) {
+  console.error('令牌格式不对：应以 ghp_ 或 github_pat_ 开头。');
+  console.error('当前读到的是:', JSON.stringify(TOKEN.slice(0, 40)));
+  console.error('请确认 token.txt 里的占位文字已被替换成真实令牌。');
+  process.exit(1);
+}
+
 function request(method, hostname, pathname, opts = {}) {
   return new Promise((resolve, reject) => {
     const payload = opts.body == null
