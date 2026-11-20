@@ -54,7 +54,7 @@ const ASSETS = [
   { file: path.join(ROOT, 'download', '使用说明.txt'), name: '使用说明.txt' },
 ];
 
-const RELEASE_BODY = `JobAid 面试练习与复盘助手，Windows 桌面版第一个公开版本。
+const RELEASE_BODY = `JobAid 线上面试助手，Windows 桌面版第一个公开版本。
 
 ## 包含什么
 
@@ -196,7 +196,7 @@ function die(msg, extra) {
     repo = await request('POST', 'api.github.com', '/user/repos', {
       body: {
         name: REPO,
-        description: '面试练习与复盘助手 · 简历 + JD 驱动的模拟面试、语音问答与面经导出',
+        description: '线上面试助手',
         homepage: `https://github.com/${OWNER}/${REPO}`,
         private: false,
         has_issues: true,
