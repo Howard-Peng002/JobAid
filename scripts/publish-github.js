@@ -2,8 +2,11 @@
 /**
  * JobAid 一键发布到 GitHub
  *
- * 用法：
+ * 用法（二选一）：
  *   GITHUB_TOKEN=ghp_xxx node scripts/publish-github.js
+ *   或把令牌写入 D:\JobAid\.github-token 后直接 node scripts/publish-github.js
+ *
+ * .github-token 已加入 .gitignore，不会被提交。
  *
  * 需要 token 具备 repo 权限。脚本会依次完成：
  *   1. 校验账号
@@ -22,7 +25,11 @@ const https = require('https');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const TOKEN = (process.env.GITHUB_TOKEN || '').trim();
+const TOKEN_FILE = path.join(ROOT, '.github-token');
+let TOKEN = (process.env.GITHUB_TOKEN || '').trim();
+if (!TOKEN && fs.existsSync(TOKEN_FILE)) {
+  TOKEN = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+}
 const OWNER = 'Howard-Peng002';
 const REPO = 'JobAid';
 const TAG = 'v1.0.0';
@@ -66,8 +73,9 @@ Windows 可能弹出「已保护你的电脑」——这是安装包未做代码
 `;
 
 if (!TOKEN) {
-  console.error('缺少 GITHUB_TOKEN 环境变量。');
-  console.error('用法: GITHUB_TOKEN=ghp_xxx node scripts/publish-github.js');
+  console.error('缺少授权令牌，二选一：');
+  console.error('  1) GITHUB_TOKEN=ghp_xxx node scripts/publish-github.js');
+  console.error('  2) 把令牌写入 ' + TOKEN_FILE + ' 后重跑');
   process.exit(1);
 }
 
