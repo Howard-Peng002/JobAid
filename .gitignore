@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 构建产物
+.build-output/
+dist/
+out/
+*.exe
+*.blockmap
+
+# 安装包与本地测试产物
+download/
+shots/
+
+# 本地模型（229MB，首次启动自动下载）
+models/
+
+# 运行时数据
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 本地备份
+*.bak
+
+# 测试音频
+scripts/*.wav

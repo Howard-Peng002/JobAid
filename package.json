@@ -1,0 +1,73 @@
+{
+  "name": "interview-copilot",
+  "version": "1.0.0",
+  "description": "实时面试辅助悬浮窗（语音识别 + AI 答复建议）",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node launch.js",
+    "dev": "node launch.js --dev",
+    "dist": "electron-builder --win nsis"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@tencent-ai/workbuddy-cloud-sdk": "^0.1.4",
+    "mammoth": "^1.13.0",
+    "msedge-tts": "^2.1.1",
+    "pdf-parse": "^2.4.5",
+    "sherpa-onnx-node": "^2.0.1",
+    "word-extractor": "^1.0.4"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.jobaid.desktop",
+    "productName": "JobAid",
+    "copyright": "JobAid",
+    "directories": {
+      "output": "D:/JobAid/.build-output",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "launch.js",
+      "package.json",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "JobAid-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JobAid",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "electronDist": "node_modules/electron/dist"
+  }
+}

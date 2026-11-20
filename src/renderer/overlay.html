@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+<title>JobAid</title>
+<style>
+  :root {
+    --op: .95;
+    --card-bg: rgba(17, 19, 27, .96);
+    --card-line: rgba(255, 255, 255, .10);
+    --tx: #f2f4f9;
+    --tx-dim: #9aa1b4;
+    --tx-q: #b9c0d4;
+    --accent: #8b7bff;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --shadow: 0 20px 56px rgba(0, 0, 0, .42);
+  }
+  body[data-theme="light"] {
+    --card-bg: rgba(255, 255, 255, .97);
+    --card-line: rgba(18, 22, 35, .10);
+    --tx: #14171f;
+    --tx-dim: #6d7488;
+    --tx-q: #4b5266;
+    --accent: #5b5bd6;
+    --ok: #16a34a;
+    --warn: #b45309;
+    --bad: #dc2626;
+    --shadow: 0 18px 46px rgba(24, 28, 48, .20);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
+  body {
+    font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--tx);
+    user-select: none;
+    cursor: default;
+  }
+
+  .wrap { position: relative; height: 100%; padding: 8px; display: flex; }
+  .card {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--card-line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    opacity: var(--op);
+    overflow: hidden;
+    backdrop-filter: blur(2px);
+  }
+
+  .bar {
+    flex: 0 0 auto; height: 38px; padding: 0 14px;
+    display: flex; align-items: center; gap: 7px;
+    border-bottom: 1px solid var(--card-line);
+    /* 按住标题栏可以拖动（渲染层手动拖拽，不依赖窗口激活） */
+    cursor: move;
+  }
+  .winbtns { display: flex; gap: 1px; margin-left: auto; }
+  body.maxed .rz { display: none; }
+  .wb {
+    width: 28px; height: 22px; padding: 0; line-height: 1;
+    -webkit-app-region: no-drag;
+    border: 0; border-radius: 6px; background: transparent;
+    color: var(--tx-dim); font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wb:hover { background: rgba(127, 137, 168, .18); color: var(--tx); }
+  #wbClose:hover { background: rgba(220, 38, 38, .85); color: #fff; }
+
+  /* 收起状态：只保留标题栏 */
+  body.compact .q, body.compact .a, body.compact .foot { display: none; }
+
+  /* 缩放手柄 */
+  .rz { position: absolute; z-index: 20; }
+  /* 手柄只铺在卡片外那 8px 透明边框上，标题栏里怎么按都是拖动 */
+  .rz-n  { top: 0; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
+  .rz-s  { bottom: 0; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
+  .rz-w  { left: 0; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
+  .rz-e  { right: 0; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
+  .rz-nw { top: 0; left: 0; width: 14px; height: 14px; cursor: nwse-resize; }
+  .rz-ne { top: 0; right: 0; width: 14px; height: 14px; cursor: nesw-resize; }
+  .rz-sw { bottom: 0; left: 0; width: 14px; height: 14px; cursor: nesw-resize; }
+  .rz-se { bottom: 0; right: 0; width: 14px; height: 14px; cursor: nwse-resize; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #6b7280; flex: 0 0 auto;
+    transition: background .2s;
+  }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 3px rgba(52, 211, 153, .16); animation: pulse 2s infinite; }
+  .dot.think { background: var(--warn); box-shadow: 0 0 0 3px rgba(251, 191, 36, .16); }
+  .dot.err { background: var(--bad); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  .phase { font-size: 11.5px; color: var(--tx-dim); letter-spacing: .3px; }
+  .brand { margin-left: auto; font-size: 10.5px; color: var(--tx-dim); opacity: .7; letter-spacing: .5px; }
+
+  .q {
+    flex: 0 0 auto; padding: 12px 16px 0;
+    font-size: 12px; line-height: 1.55; color: var(--tx-q);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .q:empty { display: none; }
+
+  .a {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding: 10px 16px 14px; font-size: 16px; line-height: 1.72;
+    letter-spacing: .2px; font-weight: 450;
+  }
+  .a .ln { margin-bottom: 7px; }
+  .a .ln:last-child { margin-bottom: 0; }
+  .a .ph { color: var(--tx-dim); font-size: 13px; font-weight: 400; }
+  .a .err { color: var(--bad); font-size: 13px; }
+  .a.streaming::after {
+    content: ''; display: inline-block; width: 7px; height: 15px; margin-left: 2px;
+    background: var(--accent); border-radius: 2px; vertical-align: -2px;
+    animation: caret .9s steps(2) infinite;
+  }
+  @keyframes caret { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+  .foot {
+    flex: 0 0 auto; height: 28px; padding: 0 14px;
+    display: flex; align-items: center; gap: 10px;
+    border-top: 1px solid var(--card-line);
+    font-size: 10.5px; color: var(--tx-dim); opacity: .75;
+  }
+  .foot span:last-child { margin-left: auto; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(140, 148, 170, .35); border-radius: 3px; }
+</style>
+</head>
+<body data-theme="dark">
+  <div class="wrap">
+    <div class="card">
+      <div class="bar">
+        <span class="dot" id="dot"></span>
+        <span class="phase" id="phase">待机</span>
+        <span class="brand">JobAid</span>
+        <span class="winbtns">
+          <button class="wb" id="wbMin" title="收起 / 展开">–</button>
+          <button class="wb" id="wbMax" title="铺满屏幕 / 还原">□</button>
+          <button class="wb" id="wbClose" title="关闭悬浮窗（Ctrl+Shift+H 再次显示）">×</button>
+        </span>
+      </div>
+      <div class="q" id="q"></div>
+      <div class="a" id="a"><span class="ph">等待面试官提问…</span></div>
+      <div class="foot">
+        <span>Ctrl+Shift+H 隐藏</span>
+        <span>Ctrl+Shift+J 重新生成</span>
+      </div>
+    </div>
+    <!-- 边缘缩放手柄：按住任一方向拖拽即可改变悬浮窗大小 -->
+    <div class="rz rz-n"  data-edge="n"></div>
+    <div class="rz rz-s"  data-edge="s"></div>
+    <div class="rz rz-w"  data-edge="w"></div>
+    <div class="rz rz-e"  data-edge="e"></div>
+    <div class="rz rz-nw" data-edge="nw"></div>
+    <div class="rz rz-ne" data-edge="ne"></div>
+    <div class="rz rz-sw" data-edge="sw"></div>
+    <div class="rz rz-se" data-edge="se"></div>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>

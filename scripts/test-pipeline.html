@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><title>pipeline</title></head>
+<body>
+<audio id="a" loop></audio>
+<script src="../src/renderer/audio-engine.js"></script>
+<script>
+window.__utts = [];
+window.__start = async (src) => {
+  const a = document.getElementById('a');
+  a.src = src;
+  await a.play();
+  // 用 audio 元素的 captureStream 模拟一条音频输入流
+  const stream = a.captureStream();
+  let resolveFirst;
+  const first = new Promise((r) => (resolveFirst = r));
+  window.__cap = new VoiceCapture({
+    channel: 'interviewer',
+    stream,
+    onUtterance: (ch, samples, rate) => {
+      const buf = Buffer.from(samples.buffer.slice(0));
+      window.__utts.push({ ch, rate, len: samples.length, b64: buf.toString('base64') });
+      if (window.__utts.length === 1) resolveFirst();
+    },
+    onLevel: () => {},
+    onError: (m) => console.error(m),
+  });
+  if (window.__cap.ctx.state === 'suspended') await window.__cap.ctx.resume();
+  await Promise.race([first, new Promise((_, rej) => setTimeout(() => rej(new Error('20s 内没有断出语音')), 20000))]);
+  a.pause();
+  const u = window.__utts[0];
+  return { ch: u.ch, rate: u.rate, len: u.len, b64: u.b64 };
+};
+</script>
+</body></html>

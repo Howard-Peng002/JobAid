@@ -1,0 +1,85 @@
+'use strict';
+const { contextBridge, ipcRenderer } = require('electron');
+
+const LISTEN = [
+  'models:list',
+  'models:error',
+  'asr:state',
+  'asr:error',
+  'transcript:add',
+  'llm:start',
+  'llm:delta',
+  'llm:done',
+  'llm:error',
+  'listen:state',
+  'overlay:state',
+  'session:clear',
+  'cfg:changed',
+  'project:progress',
+  'project:state',
+  'guard:verified',
+  'web:status',
+  'web:results',
+  'session:state',
+  'guard:applied',
+  'profiles:state',
+  'mock:state',
+];
+
+contextBridge.exposeInMainWorld('api', {
+  boot: () => ipcRenderer.invoke('boot'),
+  getModels: () => ipcRenderer.invoke('models:get'),
+  setConfig: (patch) => ipcRenderer.invoke('cfg:set', patch),
+  toggleListening: (v) => ipcRenderer.invoke('listen:toggle', v),
+  sendUtterance: (payload) => ipcRenderer.send('utterance', payload),
+  regen: () => ipcRenderer.invoke('answer:regen'),
+  ask: (t) => ipcRenderer.invoke('ask:text', t),
+  clearContext: () => ipcRenderer.invoke('context:clear'),
+  selfTest: (force) => ipcRenderer.invoke('selftest', !!force),
+  listSessions: () => ipcRenderer.invoke('sessions:list'),
+  getSession: (id) => ipcRenderer.invoke('sessions:get', id),
+  newSession: () => ipcRenderer.invoke('session:new'),
+  deleteSession: (id) => ipcRenderer.invoke('session:delete', id),
+  toggleOverlay: () => ipcRenderer.invoke('overlay:toggle'),
+  quit: () => ipcRenderer.invoke('app:quit'),
+
+  exportInterview: (fmt) => ipcRenderer.invoke('export:interview', fmt),
+  mockStart: (d) => ipcRenderer.invoke('mock:start', d),
+  mockSave: (d) => ipcRenderer.invoke('mock:save', d),
+  mockNext: () => ipcRenderer.invoke('mock:next'),
+  mockTts: (d) => ipcRenderer.invoke('mock:tts', d),
+  mockGoto: (i) => ipcRenderer.invoke('mock:goto', i),
+  mockFinish: (opts) => ipcRenderer.invoke('mock:finish', opts),
+  mockMic: (on) => ipcRenderer.invoke('mock:mic', on),
+  mockState: () => ipcRenderer.invoke('mock:state'),
+  mockReset: () => ipcRenderer.invoke('mock:reset'),
+  mockExport: () => ipcRenderer.invoke('mock:export'),
+  setUiOpacity: (v) => ipcRenderer.invoke('ui:opacity', v),
+  setZoom: (f) => ipcRenderer.invoke('ui:zoom', f),
+  quitApp: () => ipcRenderer.invoke('app:quit'),
+  modelSelect: (ref) => ipcRenderer.invoke('model:select', ref),
+  providerSave: (p) => ipcRenderer.invoke('provider:save', p),
+  providerDelete: (id) => ipcRenderer.invoke('provider:delete', id),
+  providerTest: (p) => ipcRenderer.invoke('provider:test', p),
+
+  listProfiles: () => ipcRenderer.invoke('profiles:list'),
+  createProfile: (name) => ipcRenderer.invoke('profiles:create', name),
+  renameProfile: (id, name) => ipcRenderer.invoke('profiles:rename', { id, name }),
+  deleteProfile: (id) => ipcRenderer.invoke('profiles:delete', id),
+  switchProfile: (id) => ipcRenderer.invoke('profiles:switch', id),
+
+  pickResume: () => ipcRenderer.invoke('resume:pick'),
+  clearResume: () => ipcRenderer.invoke('resume:clear'),
+  pickProject: () => ipcRenderer.invoke('project:pick'),
+  rebuildProject: () => ipcRenderer.invoke('project:rebuild'),
+  clearProject: () => ipcRenderer.invoke('project:clear'),
+  openProject: () => ipcRenderer.invoke('project:open'),
+  testProject: (q) => ipcRenderer.invoke('project:test', q),
+  webTest: (q) => ipcRenderer.invoke('web:test', q),
+  on(channel, cb) {
+    if (!LISTEN.includes(channel)) return () => {};
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.removeListener(channel, handler);
+  },
+});
