@@ -24,6 +24,12 @@ const path = require('path');
 const https = require('https');
 const { execFileSync } = require('child_process');
 
+// 沙箱代理会拦截 GitHub（CONNECT 502），发布一律直连。
+// 这里同时作用于本进程的 https 请求与子进程 git push。
+for (const k of ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'all_proxy']) {
+  delete process.env[k];
+}
+
 const ROOT = path.resolve(__dirname, '..');
 const TOKEN_FILE = path.join(ROOT, '.github-token');
 let TOKEN = (process.env.GITHUB_TOKEN || '').trim();
