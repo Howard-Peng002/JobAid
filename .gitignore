@@ -31,3 +31,6 @@ scripts/*.wav
 
 # 本地授权令牌（切勿提交）
 .github-token
+
+# 令牌临时文件
+token.txt

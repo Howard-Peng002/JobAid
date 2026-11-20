@@ -31,10 +31,18 @@ for (const k of ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_
 }
 
 const ROOT = path.resolve(__dirname, '..');
-const TOKEN_FILE = path.join(ROOT, '.github-token');
+const TOKEN_FILES = [
+  path.join(ROOT, '.github-token'),
+  path.join(ROOT, 'token.txt'), // 便于双击用记事本编辑
+];
 let TOKEN = (process.env.GITHUB_TOKEN || '').trim();
-if (!TOKEN && fs.existsSync(TOKEN_FILE)) {
-  TOKEN = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+if (!TOKEN) {
+  for (const f of TOKEN_FILES) {
+    if (fs.existsSync(f)) {
+      const v = fs.readFileSync(f, 'utf8').trim();
+      if (v) { TOKEN = v; break; }
+    }
+  }
 }
 const OWNER = 'Howard-Peng002';
 const REPO = 'JobAid';
@@ -81,7 +89,7 @@ Windows 可能弹出「已保护你的电脑」——这是安装包未做代码
 if (!TOKEN) {
   console.error('缺少授权令牌，二选一：');
   console.error('  1) GITHUB_TOKEN=ghp_xxx node scripts/publish-github.js');
-  console.error('  2) 把令牌写入 ' + TOKEN_FILE + ' 后重跑');
+  console.error('  2) 把令牌粘贴到 D:\\JobAid\\token.txt 后重跑');
   process.exit(1);
 }
 
