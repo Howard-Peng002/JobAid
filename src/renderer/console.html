@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+<title>JobAid</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --side: #f6f6f8;
+    --line: #e8e8ee;
+    --line-soft: #f0f0f4;
+    --text: #17171c;
+    --text-2: #5c5c69;
+    --muted: #8e8e9a;
+    --accent: #17171c;
+    --ok: #128a3f;
+    --warn: #a16207;
+    --bad: #c62828;
+    --card: #ffffff;
+    --card-2: #fbfbfd;
+    --hover: #f4f4f8;
+    --input-bg: #ffffff;
+    --bad-soft: #fdecec;
+    --warn-soft: #fdf3e2;
+  }
+
+  /* 深色主题：只做两套，浅色是默认 */
+  html[data-theme='dark'] {
+    --bg: #15151a;
+    --side: #111116;
+    --line: #2b2b34;
+    --line-soft: #232330;
+    --text: #ececf2;
+    --text-2: #b4b4c0;
+    --muted: #84848f;
+    --accent: #ececf2;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --card: #1c1c22;
+    --card-2: #212128;
+    --hover: #26262f;
+    --input-bg: #1a1a20;
+    --bad-soft: #3a1f22;
+    --warn-soft: #3a2c14;
+  }
+  html[data-theme='dark'] body { background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font: 14px/1.6 "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  button { font: inherit; cursor: pointer; }
+  textarea, select, input { font: inherit; color: inherit; }
+
+  .app { display: flex; height: 100%; overflow: hidden; }
+
+  /* ---------------- 侧栏 ---------------- */
+  .side {
+    width: 216px; flex: 0 0 auto; background: var(--side);
+    display: flex; flex-direction: column; padding: 12px 10px 10px;
+    overflow-y: auto; overflow-x: hidden;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px 12px; font-size: 13.5px; font-weight: 650; color: var(--text);
+    letter-spacing: .2px;
+  }
+  .brand .mark {
+    width: 20px; height: 20px; display: block; flex: none;
+    filter: drop-shadow(0 1px 1px rgba(20, 20, 30, .18));
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    height: 32px; padding: 0 9px; margin-bottom: 2px;
+    border: 0; border-radius: 8px; background: transparent;
+    color: var(--text-2); font-size: 13px; text-align: left; width: 100%;
+  }
+  .nav-item:hover { background: var(--hover); }
+  .nav-item.active { background: var(--hover); color: var(--text); font-weight: 600; }
+  .nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.6; flex: 0 0 auto; }
+  .nav-group { font-size: 11px; color: #a3a3af; padding: 12px 9px 6px; letter-spacing: .2px; }
+
+  .side-foot { margin-top: auto; padding-top: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 24px; padding: 0 9px; border-radius: 999px;
+    font-size: 11.5px; color: #4c4c59; background: #eceded;
+    margin: 0 4px 6px 0; white-space: nowrap;
+  }
+  .pill.ok { background: #e8f5ec; color: var(--ok); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+
+  /* ---------------- 主区 ---------------- */
+  .content { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    height: 54px; flex: 0 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 20px;
+  }
+  .topbar .sp { flex: 1 1 auto; }
+  .cta {
+    height: 32px; padding: 0 16px; border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--card); font-size: 13px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .cta:hover { background: #2a2a33; }
+  .cta.rec { background: #b23a34; }
+  .cta.rec:hover { background: #9c322d; }
+  .cta::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: #6ee7a0;
+  }
+  .cta.rec::before { background: var(--card); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+  .icon-btn {
+    width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); color: var(--text-2); display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: var(--hover); }
+
+  /* ---------------- 面板 ---------------- */
+  .panel { display: none; flex: 1 1 auto; min-height: 0; min-width: 0; overflow: hidden; flex-direction: column; }
+  .panel.active { display: flex; }
+
+  .stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 20px; display: flex; flex-direction: column; }
+  .stage::-webkit-scrollbar { width: 8px; }
+  .stage::-webkit-scrollbar-thumb { background: #e0e0e6; border-radius: 4px; }
+
+  /* 首屏 */
+  .hero { margin: auto; text-align: center; max-width: 640px; padding: 30px 0 10px; }
+  .panel.busy .hero { display: none; }
+  .hero-mark { display: flex; justify-content: center; margin-bottom: 15px; }
+  .hero-mark svg {
+    width: 60px; height: 60px; display: block;
+    filter: drop-shadow(0 10px 20px rgba(17, 19, 26, .22));
+  }
+  .hero h1 { font-size: 27px; font-weight: 600; letter-spacing: .3px; margin: 0; }
+  .hero p { color: var(--text-2); font-size: 13px; line-height: 2; margin: 18px auto 0; max-width: 600px; text-wrap: pretty; }
+  .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .chip {
+    height: 30px; padding: 0 14px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--card); color: var(--text-2); font-size: 12.5px;
+  }
+  .chip:hover { background: var(--hover); }
+
+  /* 作答 */
+  .answer-block { padding: 18px 0 4px; max-width: 760px; width: 100%; margin: 0 auto; }
+  .answer-block { min-height: 0; }
+  .question { font-size: 15px; font-weight: 600; line-height: 1.8; color: var(--text); }
+  .question:not(:empty)::before { content: '问 '; color: var(--muted); font-weight: 500; }
+  .steps { margin-top: 8px; font-size: 12px; color: var(--muted); display: none; }
+  .steps.on { display: block; }
+  .steps .st { display: flex; gap: 6px; line-height: 1.9; }
+  .steps .st i { font-style: normal; color: #c8c8d2; }
+  .steps .st.done i { color: #1a9c53; }
+  .answer {
+    margin-top: 12px; font-size: 14px; line-height: 2; color: #26262f;
+    white-space: pre-wrap; word-break: break-word; min-height: 22px;
+  }
+  .answer .ph { color: var(--muted); font-size: 13px; }
+  .answer.err { color: var(--bad); font-size: 13px; }
+  .answer.streaming::after {
+    content: ''; display: inline-block; width: 6px; height: 15px;
+    background: var(--line); margin-left: 3px; vertical-align: -2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .refs { margin-top: 10px; font-size: 11.5px; color: #a0a0ad; display: none; }
+  .refs.on { display: block; }
+
+  /* 字幕 */
+  .transcript {
+    max-width: 760px; width: 100%; margin: 6px auto 16px;
+    border-top: 1px solid var(--line-soft); padding-top: 10px;
+    font-size: 12.5px; color: #4f4f5c; max-height: 190px; overflow: auto;
+  }
+  .transcript:empty { display: none; }
+  .transcript .line { display: flex; gap: 8px; padding: 3px 0; line-height: 1.75; }
+  .transcript .who {
+    flex: 0 0 auto; height: 18px; padding: 0 7px; border-radius: 999px;
+    background: #eef1f7; color: #5a6a86; font-size: 11px; line-height: 18px;
+  }
+  .transcript .line.me .who { background: #eef7f0; color: #2f7a4b; }
+  .transcript .txt { flex: 1 1 auto; }
+  .transcript .empty { color: #ababb8; padding: 6px 0; }
+
+  /* 底部输入卡 */
+  .composer {
+    position: relative; /* 知识库下拉菜单的定位基准 */
+    flex: 0 0 auto; width: min(780px, calc(100% - 40px)); margin: 0 auto 16px;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+    box-shadow: 0 2px 10px rgba(24, 24, 40, .04);
+    padding: 9px 12px 8px;
+  }
+  .composer-top { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
+
+  /* 知识库选择：输入卡左上角的胶囊 + 下拉菜单 */
+  .kb-chip {
+    display: inline-flex; align-items: center; gap: 6px; max-width: 236px;
+    height: 26px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--card); color: var(--text-2); font-size: 12px; flex: none;
+  }
+  .kb-chip:hover { background: var(--hover); }
+  .kb-chip-k { color: var(--muted); flex: none; }
+  .kb-chip b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kb-menu {
+    position: absolute; left: 14px; bottom: 44px; z-index: 40; min-width: 232px; max-width: 300px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 5px;
+    box-shadow: 0 12px 30px rgba(20, 22, 34, .16);
+  }
+  .kb-menu-item {
+    display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 8px;
+    border: 0; border-radius: 7px; background: transparent; font-size: 12.5px; color: var(--text-2); text-align: left;
+  }
+  .kb-menu-item:hover { background: var(--hover); }
+  .kb-menu-item.on { color: var(--text); font-weight: 600; }
+  .kb-menu-item i { width: 6px; height: 6px; border-radius: 50%; background: transparent; flex: none; }
+  .kb-menu-item.on i { background: var(--text); }
+  .kb-menu-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kb-menu-sep { height: 1px; margin: 4px 6px; background: var(--line-soft); }
+
+  /* 知识库页：库列表 */
+  .kb-top { margin-bottom: 18px; }
+  .kb-list { display: flex; flex-direction: column; gap: 6px; }
+  .kb-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+  }
+  .kb-item.on { border-color: var(--line); background: var(--card-2); }
+  .kb-item .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); flex: none; }
+  .kb-item.on .dot { background: var(--text); }
+  .kb-meta { flex: 1 1 auto; min-width: 0; }
+  .kb-meta b { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+  .kb-meta span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .kb-new { margin-top: 8px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row input[type=range] { flex: 1 1 auto; }
+  .slider-row .val { width: 44px; text-align: right; font-size: 12px; color: var(--muted); }
+  .quit-btn {
+    height: 32px; padding: 0 14px; border-radius: 9px; font-size: 13px;
+    border: 1px solid var(--bad); background: transparent; color: var(--bad);
+  }
+  .quit-btn:hover { background: var(--bad-soft); }
+  .kb-rename {
+    width: 100%; height: 24px; padding: 0 6px; font-size: 13px; font-weight: 600;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text);
+  }
+  .kb-item .ghost { opacity: .75; }
+  .kb-item:hover .ghost { opacity: 1; }
+  .composer-top .sp { flex: 1 1 auto; }
+  select.model {
+    border: 0; background: transparent; font-size: 12.5px; color: #4a4a56;
+    max-width: 220px; height: 24px; outline: none;
+  }
+  .mini-tip { font-size: 11px; color: #b6b6c2; }
+  #askInput {
+    width: 100%; border: 0; outline: none; resize: none;
+    font-size: 13.5px; line-height: 1.7; padding: 4px 2px; max-height: 120px;
+    background: transparent;
+  }
+  #askInput::placeholder { color: #adadb9; }
+  .composer-bar { display: flex; align-items: center; gap: 6px; padding-top: 4px; }
+  .composer-bar .sp { flex: 1 1 auto; }
+  .tbtn {
+    height: 26px; padding: 0 10px; border: 1px solid transparent; border-radius: 999px;
+    background: transparent; color: var(--text-2); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tbtn:hover { background: var(--card-2); }
+  .tbtn.on { background: #eef1ff; color: #3b46c4; border-color: #dde2ff; }
+  .plus {
+    width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 50%;
+    background: var(--card); color: var(--text-2); font-size: 15px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .send {
+    width: 30px; height: 30px; border: 0; border-radius: 50%;
+    background: var(--text); color: var(--card); font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .send:hover { background: #2a2a33; }
+
+  /* ---------------- 右侧设置栏 ---------------- */
+  .rail {
+    width: 274px; flex: 0 0 auto; border-left: 1px solid var(--line-soft);
+    background: var(--card); overflow-y: auto; overflow-x: hidden;
+    padding: 16px 12px 20px 16px; min-height: 0;
+    scrollbar-width: thin; scrollbar-color: #b0b0c0 transparent;
+    transition: width .18s ease, padding .18s ease;
+  }
+  body.rail-off .rail { width: 0; padding: 0; border-left: 0; overflow: hidden; }
+  .rail::-webkit-scrollbar { width: 10px; }
+  .rail::-webkit-scrollbar-track { background: transparent; }
+  .rail::-webkit-scrollbar-thumb { background: #b0b0c0; border-radius: 5px; }
+  .rail::-webkit-scrollbar-thumb:hover { background: #8e8ea2; }
+  .rs { padding-bottom: 11px; margin-bottom: 11px; border-bottom: 1px solid var(--line-soft); }
+  .rs:last-child { border-bottom: 0; margin-bottom: 0; }
+  .rs-t { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 12.5px; color: #45454f; }
+  .row label { flex: 1 1 auto; }
+  .row .val { flex: 0 0 auto; color: var(--muted); font-size: 11.5px; width: 34px; text-align: right; }
+
+  .switch { position: relative; width: 34px; height: 20px; flex: 0 0 auto; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch > span {
+    position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: .16s;
+    /* 视觉层必须放行点击，否则 transparent 的 input 永远收不到事件（滑块点不动） */
+    pointer-events: none;
+  }
+  .switch > span::after {
+    content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--card); top: 2px; left: 2px; transition: .16s; box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  .switch input:checked + span { background: var(--text); }
+  .switch input:checked + span::after { transform: translateX(14px); }
+
+  .seg { display: flex; gap: 2px; background: var(--card-2); border-radius: 8px; padding: 2px; }
+  .seg button {
+    border: 0; background: transparent; border-radius: 6px; height: 24px;
+    padding: 0 10px; font-size: 12px; color: var(--text-2);
+  }
+  .seg button.on { background: var(--text); color: var(--card); font-weight: 600; box-shadow: none; }
+
+  /* 快捷键面板：勾选「快捷键显示」后展开 */
+  .keys {
+    display: none; margin: 2px 0 10px; padding: 7px 9px;
+    border-radius: 8px; background: var(--card-2);
+  }
+  .keys.on { display: block; }
+  .key { display: flex; align-items: center; gap: 7px; height: 27px; font-size: 12px; color: var(--text-2); }
+  .key span {
+    flex: 1 1 auto; min-width: 0; text-align: right; color: var(--muted); font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  kbd {
+    font: inherit; font-size: 9.5px; line-height: 1.9; letter-spacing: 0;
+    padding: 1px 5px; border-radius: 5px; white-space: nowrap; flex: none;
+    background: var(--card); border: 1px solid var(--line); border-bottom-width: 2px;
+    color: var(--text-2);
+  }
+
+  input[type=range] { flex: 1 1 auto; accent-color: var(--text); }
+
+  .meter { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .meter span { width: 40px; flex: 0 0 auto; }
+  .meter .lvl {
+    flex: 1 1 auto; height: 4px; border-radius: 3px; background: #ececf1;
+  }
+  .meter em { font-style: normal; width: 22px; text-align: right; }
+  .ch-stat { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .ch-stat.ok { color: var(--ok); }
+  .ch-stat.bad { color: var(--bad); }
+
+  .guard-btn {
+    width: 100%; height: 34px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font-size: 12.5px;
+  }
+  .guard-btn.on { background: var(--text); color: var(--card); border-color: var(--text); }
+  .guard-btn.bad { background: var(--bad-soft); color: var(--bad); border-color: #f5cccc; }
+  .test-out { display: none; margin-top: 8px; font-size: 11.5px; line-height: 1.6; padding: 7px 9px; border-radius: 8px; }
+  .test-out.show { display: block; background: #f5f5f8; color: #55555f; }
+  .test-out.ok { background: #eaf7ef; color: var(--ok); }
+  .test-out.bad { background: var(--bad-soft); color: var(--bad); }
+
+  /* ---------------- 通用页面 ---------------- */
+  .page { flex: 1 1 auto; overflow: auto; padding: 6px 24px 28px; max-width: 860px; width: 100%; margin: 0 auto; }
+  .page-title { font-size: 19px; font-weight: 600; margin: 8px 0 18px; }
+  .group { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line-soft); }
+  .group:last-child { border-bottom: 0; }
+  .group-h { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+
+  .mini {
+    height: 32px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font-size: 12.5px;
+  }
+  .mini:hover { background: var(--hover); }
+  .btn-primary {
+    background: var(--text); color: var(--card); border-color: var(--text); font-weight: 600;
+  }
+  .btn-primary:hover { opacity: .88; background: var(--text); }
+  .btn-primary:disabled { opacity: .45; }
+  .ghost {
+    height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--text-2); font-size: 12px;
+  }
+  .ghost:hover { background: var(--card-2); }
+  .primary {
+    height: 34px; padding: 0 16px; border: 0; border-radius: 9px;
+    background: var(--text); color: var(--card); font-size: 13px;
+  }
+
+  .file-empty { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px dashed var(--line); border-radius: 11px; }
+  .file-filled { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; }
+  .file-row { display: flex; align-items: center; gap: 8px; }
+  .file-ico {
+    flex: 0 0 auto; height: 22px; padding: 0 7px; border-radius: 6px;
+    background: #f0f0f5; color: #6a6a78; font-size: 10.5px; line-height: 22px; letter-spacing: .5px;
+  }
+  .file-name { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-row .sp { flex: 1 1 auto; }
+  .file-filled textarea, #txtJd {
+    width: 100%; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; font-size: 13px; line-height: 1.8; outline: none; resize: vertical;
+    background: var(--card-2);
+  }
+  .proj-bar { display: none; height: 4px; border-radius: 3px; background: #eeeef3; margin-top: 10px; overflow: hidden; }
+  .proj-bar.on { display: block; }
+  .proj-bar i { display: block; height: 100%; width: 0; background: var(--text); transition: width .2s; }
+  .hint { font-size: 11.5px; color: #9b9ba8; line-height: 1.7; margin-top: 6px; }
+  .jd-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+  /* 模型供应商表单与卡片 */
+  .fld { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .fld > span { width: 78px; flex: none; font-size: 12.5px; color: var(--text-2); }
+  .fld input {
+    flex: 1 1 auto; height: 32px; padding: 0 10px; font-size: 13px; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+  }
+  .fld input:focus, .fld select:focus { outline: none; border-color: var(--line); }
+  .pv-preset {
+    flex: 1 1 auto; height: 32px; padding: 0 8px; font-size: 13px; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+  }
+  .pv-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 6px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+  }
+  .pv-item.active { border-color: var(--line); background: var(--card-2); }
+  .pv-meta { flex: 1 1 auto; min-width: 0; }
+  .pv-meta b { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+  .pv-meta span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pv-item .ghost { opacity: .75; }
+  .pv-item:hover .ghost { opacity: 1; }
+  .page-sub { margin: -6px 0 18px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+  /* 模拟面试 */
+  .mock-progress { display: flex; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .mock-progress .sp { flex: 1 1 auto; }
+  #mockAnswer {
+    display: block; width: 100%; max-width: 100%; box-sizing: border-box;
+    padding: 12px 14px; font-size: 13.5px; line-height: 1.8; color: var(--text);
+    border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+    resize: vertical; min-height: 150px; font-family: inherit;
+  }
+  #mockAnswer:focus { outline: none; border-color: #b9b9c6; }
+  /* 语音通话界面：像打电话一样，只有声波和状态 */
+  #mockCall { max-width: 560px; margin: 0 auto; }
+  .voice-row { display: flex; align-items: center; gap: 8px; }
+  .voice-preview {
+    display: inline-flex; align-items: center; gap: 5px; flex: none;
+    height: 30px; padding: 0 12px; border-radius: 15px;
+    border: 1px solid var(--line); background: var(--card);
+    font-size: 12px; color: var(--text-2); cursor: pointer;
+  }
+  .voice-preview:hover { background: var(--hover); color: var(--text); border-color: #d6d6de; }
+  .voice-preview:active { transform: scale(.97); }
+  .voice-preview svg { opacity: .75; }
+  .voice-row .pv-preset { flex: 1 1 auto; max-width: 260px; }
+  .stealth-hint { margin: -2px 0 8px; font-size: 11px; line-height: 1.5; color: var(--bad); opacity: .8; }
+  .call-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .call-badge {
+    font-size: 12px; color: var(--text-2); padding: 4px 10px;
+    border-radius: 999px; background: var(--card-2); border: 1px solid var(--line);
+  }
+  .call-orb {
+    width: 132px; height: 132px; margin: 0 auto 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 35% 30%, var(--card), var(--card-2));
+    border: 1px solid var(--line);
+    box-shadow: 0 8px 40px rgba(0,0,0,.06);
+    transform: scale(calc(1 + var(--level, 0) * 0.12));
+    transition: transform .12s ease-out;
+  }
+  .call-orb.speaking { animation: orbPulse 1.6s ease-in-out infinite; }
+  @keyframes orbPulse {
+    0%, 100% { box-shadow: 0 8px 40px rgba(0,0,0,.06); }
+    50% { box-shadow: 0 8px 56px rgba(0,0,0,.14); }
+  }
+  .orb-wave { display: flex; align-items: center; gap: 5px; height: 44px; }
+  .orb-wave i {
+    display: block; width: 4px; height: 10px; border-radius: 2px; background: var(--text);
+    opacity: .55; transition: height .1s linear;
+  }
+  .call-orb.idle .orb-wave i { height: 8px; opacity: .3; }
+  .call-orb.speaking .orb-wave i { animation: waveJump 1s ease-in-out infinite; opacity: .8; }
+  .call-orb.speaking .orb-wave i:nth-child(2) { animation-delay: .12s; }
+  .call-orb.speaking .orb-wave i:nth-child(3) { animation-delay: .24s; }
+  .call-orb.speaking .orb-wave i:nth-child(4) { animation-delay: .36s; }
+  .call-orb.speaking .orb-wave i:nth-child(5) { animation-delay: .48s; }
+  @keyframes waveJump {
+    0%, 100% { height: 12px; }
+    50% { height: 34px; }
+  }
+  .call-status { text-align: center; font-size: 14px; color: var(--text); margin-bottom: 22px; min-height: 22px; }
+  .call-stream {
+    max-height: 210px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+    padding: 4px 2px; margin-bottom: 22px;
+  }
+  .call-msg { font-size: 13.5px; line-height: 1.75; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; }
+  .call-msg.ai { background: var(--hover); border: 1px solid var(--line); color: var(--text); align-self: flex-start; }
+  .call-msg.me { background: var(--text); color: var(--card); align-self: flex-end; max-width: 88%; }
+  .call-msg .who { font-size: 11px; opacity: .6; display: block; margin-bottom: 3px; }
+  .call-footer { display: flex; gap: 12px; justify-content: center; }
+  .call-btn {
+    height: 40px; padding: 0 26px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+  }
+  .call-btn:hover { background: var(--hover); }
+  .call-btn.primary { background: var(--text); border-color: var(--text); color: var(--card); }
+  .call-btn.primary:hover { opacity: .88; background: var(--text); }
+  .call-btn.danger { border-color: var(--bad); color: var(--bad); }
+  .call-btn.danger:hover { background: var(--bad-soft); }
+  .call-btn.on { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .mock-count-row { display: flex; align-items: center; gap: 10px; }
+  .mock-count-input { width: 88px; flex: 0 0 88px; height: 30px; }
+  .mock-mic { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .mic-btn {
+    height: 34px; padding: 0 16px; border-radius: 17px; font-size: 12.5px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+  }
+  .mic-btn:hover { background: var(--hover); }
+  .mic-btn.rec { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .mock-voice-tools { display: flex; align-items: center; gap: 6px; margin-right: 8px; }
+  .mock-voice-tools .pv-preset { height: 26px; font-size: 12px; padding: 0 6px; }
+  .mock-q {
+    font-size: 16px; font-weight: 600; line-height: 1.7; color: var(--text);
+    padding: 14px 16px; border-radius: 12px; background: var(--card-2);
+    border: 1px solid var(--line); margin-bottom: 12px; white-space: pre-wrap;
+  }
+  .mock-feedback {
+    font-size: 12.5px; line-height: 1.75; color: var(--text-2);
+    padding: 10px 14px; border-radius: 10px; background: var(--card-2);
+    border-left: 3px solid var(--ok); margin-bottom: 12px;
+  }
+  .mock-feedback b { color: var(--text); margin-right: 6px; }
+  .mock-total { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .mock-total b { font-size: 40px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
+  .mock-total span { font-size: 13px; color: var(--text-2); }
+  .dim-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 12.5px; }
+  .dim-row .k { width: 58px; flex: none; color: var(--text-2); }
+  .dim-row .bar { flex: 1 1 auto; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+  .dim-row .bar i { display: block; height: 100%; border-radius: 3px; background: var(--text); }
+  .dim-row .v { width: 30px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .adv-block { margin-top: 14px; }
+  .adv-block h4 { font-size: 12.5px; font-weight: 600; color: var(--text); margin: 0 0 6px; }
+  .adv-block li { font-size: 12.5px; line-height: 1.8; color: var(--text-2); margin-left: 16px; }
+
+  .hist-item { padding: 12px 2px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+  .hist-item:hover { background: var(--card-2); }
+  .hist-top { display: flex; align-items: center; gap: 10px; }
+  .hist-time { font-size: 13px; font-weight: 500; color: #26262f; }
+  .hist-meta { font-size: 12px; color: var(--muted); }
+  .hist-more { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+  .hist-del { border: 0; background: transparent; color: #c2c2ce; font-size: 11.5px; padding: 2px 6px; border-radius: 6px; }
+  .hist-del:hover { color: var(--bad); background: var(--bad-soft); }
+  .hist-qa { display: none; padding: 8px 0 2px; }
+  .hist-item.open .hist-qa { display: block; }
+  .hist-q { font-size: 12.5px; color: #3b46c4; margin: 10px 0 4px; }
+  .hist-a { font-size: 12.5px; line-height: 1.85; color: #3d3d47; white-space: pre-wrap; }
+
+  .skill-card { padding: 12px 2px; border-bottom: 1px solid var(--line-soft); }
+  .skill-head { display: flex; align-items: center; gap: 10px; }
+  .skill-name { font-size: 13.5px; font-weight: 500; flex: 1 1 auto; }
+  .skill-card textarea {
+    width: 100%; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; font-size: 12.5px; line-height: 1.8; outline: none; resize: vertical;
+    background: var(--card-2);
+  }
+
+  .empty { font-size: 12.5px; color: var(--muted); padding: 10px 0; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 10px);
+    background: rgba(23, 23, 28, .94); color: var(--card); font-size: 12.5px;
+    padding: 9px 15px; border-radius: 10px; opacity: 0; transition: .22s;
+    pointer-events: none; z-index: 99; max-width: 70vw;
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ------------------------------------------------ 侧栏 -->
+  <nav class="side">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" rx="118" fill="#171920"/>
+        <path d="M272 160 H336 V274 A80 80 0 0 1 176 274" fill="none" stroke="#fff"
+              stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="412" cy="252" r="26" fill="#22C58B"/>
+      </svg>
+      JobAid
+    </div>
+
+    <div class="nav-group">对话</div>
+    <button class="nav-item active" data-panel="session">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="newTask">新建任务</span>
+    </button>
+    <button class="nav-item" data-panel="history">
+      <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8.5"/></svg><span data-i18n="history">历史记录</span>
+    </button>
+
+    <div class="nav-group">资源</div>
+    <button class="nav-item" data-panel="kb">
+      <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5V5.5Z"/><path d="M8 7h8M8 11h6"/></svg><span data-i18n="kb">知识库</span>
+    </button>
+    <button class="nav-item" data-panel="skills">
+      <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/></svg><span data-i18n="skills">技能</span>
+    </button>
+    <button class="nav-item" data-panel="mock">
+      <svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H7l-4 3v-6.2A8.5 8.5 0 1 1 21 12Z"/><path d="M9 11h6M9 15h4"/></svg><span data-i18n="mock">模拟面试</span>
+    </button>
+    <button class="nav-item" data-panel="models">
+      <svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/></svg><span data-i18n="models">模型</span>
+    </button>
+    <button class="nav-item" data-panel="settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span data-i18n="settings">设置</span>
+    </button>
+
+    <div class="side-foot">
+      <span class="pill" id="pillAsr">语音模型加载中</span>
+      <span class="pill" id="pillGuard">防护</span>
+    </div>
+  </nav>
+
+  <!-- ------------------------------------------------ 主区 -->
+  <main class="content">
+    <header class="topbar">
+      <span class="sp"></span>
+      <button class="icon-btn" id="btnRail" title="设置">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M4.2 7.5l1.9 1.1M17.9 15.4l1.9 1.1M4.2 16.5l1.9-1.1M17.9 8.6l1.9-1.1"/></svg>
+      </button>
+      <button id="btnListen" class="cta" data-i18n="startListen">开始监听</button>
+    </header>
+
+    <!-- 新建任务 -->
+    <section class="panel active" id="panel-session">
+      <div class="stage">
+        <div class="hero" id="hero">
+          <div class="hero-mark">
+            <svg viewBox="0 0 512 512" aria-hidden="true">
+              <defs>
+                <linearGradient id="heroSq" x1="0.12" y1="0" x2="0.88" y2="1">
+                  <stop offset="0" stop-color="#2C3039"/>
+                  <stop offset="0.55" stop-color="#15171C"/>
+                  <stop offset="1" stop-color="#08090B"/>
+                </linearGradient>
+              </defs>
+              <rect width="512" height="512" rx="118" fill="url(#heroSq)"/>
+              <path d="M272 160 H336 V274 A80 80 0 0 1 176 274" fill="none" stroke="#fff"
+                    stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="412" cy="252" r="26" fill="#22C58B"/>
+            </svg>
+          </div>
+          <h1>JobAid</h1>
+          <p>你好，我是你的面试助理！</p>
+          <div class="chips">
+            <button class="chip" data-q="先做个自我介绍">快速开始面试准备</button>
+            <button class="chip" data-q="介绍一下你最近做的项目">润色项目描述</button>
+            <button class="chip" data-q="这个岗位你最看重什么能力">岗位匹配分析</button>
+          </div>
+        </div>
+
+        <div class="answer-block">
+          <div class="question" id="question"></div>
+          <div class="steps" id="steps"></div>
+          <div class="answer" id="answer"></div>
+          <div class="refs" id="refs"></div>
+        </div>
+
+        <div class="transcript" id="transcript"></div>
+      </div>
+
+      <div class="composer">
+        <div class="composer-top">
+          <button class="kb-chip" id="btnKbPick" title="切换知识库">
+            <span class="kb-chip-k" data-i18n="kbChip">知识库</span>
+            <b id="kbPickName">默认</b>
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <select id="selModel" class="model"><option value="">加载中…</option></select>
+          <span class="sp"></span>
+          <span class="mini-tip" data-i18n="sendHint">Enter 发送 · Shift+Enter 换行</span>
+        </div>
+        <div class="kb-menu" id="kbMenu" hidden></div>
+        <textarea id="askInput" rows="1" data-i18n-ph="askPlaceholder" placeholder="向 JobAid 提问，或粘贴面试官的问题…"></textarea>
+        <div class="composer-bar">
+          <button class="plus" id="btnPlus" title="打开知识库">+</button>
+          <button class="tbtn" id="btnWeb">网络搜索</button>
+          <button class="tbtn" id="btnRegen">重新生成</button>
+          <button class="tbtn" id="btnClear">清空</button>
+          <span class="sp"></span>
+          <button class="send" id="btnAsk" title="生成作答">↑</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 历史记录 -->
+    <section class="panel" id="panel-history">
+      <div class="page">
+        <h2 class="page-title">历史记录</h2>
+        <div id="histList"></div>
+      </div>
+    </section>
+
+    <!-- 知识库 -->
+    <section class="panel" id="panel-kb">
+      <div class="page">
+        <h2 class="page-title" data-i18n="kb">知识库</h2>
+
+        <div class="kb-top">
+          <div class="kb-list" id="kbList"></div>
+          <button class="mini kb-new" id="btnKbNew">+ 新建知识库</button>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="resume">简历</div>
+          <div class="file-empty" id="resumeEmpty">
+            <button class="mini" id="btnResume">上传简历（PDF / Word）</button>
+            <span class="hint" style="margin:0">解析后会自动用于作答</span>
+          </div>
+          <div class="file-filled" id="resumeFilled" hidden>
+            <div class="file-row">
+              <span class="file-ico">简历</span>
+              <span class="file-name" id="resumeName"></span>
+              <span class="sp"></span>
+              <button class="ghost" id="btnResumeEdit">编辑文字</button>
+              <button class="ghost" id="btnResumeSwap">更换</button>
+              <button class="ghost" id="btnResumeDel">移除</button>
+            </div>
+            <textarea id="txtResume" rows="9" hidden></textarea>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="projectLib">项目资料库</div>
+          <div class="file-empty" id="projEmpty">
+            <button class="mini" id="btnProjPick">选择文件夹</button>
+            <span class="hint" style="margin:0">代码、设计文档、述职材料都可以放进去</span>
+          </div>
+          <div class="file-filled" id="projFilled" hidden>
+            <div class="file-row">
+              <span class="file-ico">目录</span>
+              <span class="file-name" id="projName"></span>
+              <span class="sp"></span>
+              <button class="ghost" id="btnProjOpen">打开</button>
+              <button class="ghost" id="btnProjRebuild">重建索引</button>
+              <button class="ghost" id="btnProjDel">移除</button>
+            </div>
+            <div class="proj-bar" id="projBar"><i id="projBarIn"></i></div>
+            <div class="hint" id="projProgress"></div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="jobJD">岗位 JD</div>
+          <textarea id="txtJd" rows="7" readonly placeholder="粘贴岗位职责与要求，作答会更贴合岗位关键词。"></textarea>
+          <div class="jd-actions">
+            <button class="ghost" id="btnJdEdit">编辑</button>
+            <button class="mini" id="btnJdSave" hiddendata-i18n="save">保存</button>
+            <button class="ghost" id="btnJdCancel" hiddendata-i18n="cancel">取消</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 技能 -->
+    <section class="panel" id="panel-skills">
+      <div class="page">
+        <h2 class="page-title" data-i18n="skills">技能</h2>
+        <div id="skillList"></div>
+        <button class="mini" id="btnSkillAdd" style="margin-top:12px">＋ 新增技能</button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-mock">
+      <div class="page">
+        <h2 class="page-title" data-i18n="mock">模拟面试</h2>
+
+        <div id="mockSetup">
+          <div class="group">
+            <div class="group-h" data-i18n="mockType">面试类型</div>
+            <div class="seg" id="segMockType">
+              <button data-v="tech" class="on">技术面试</button>
+              <button data-v="hr">HR 面试</button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="group-h" data-i18n="mockMode">作答方式</div>
+            <div class="seg" id="segMockMode">
+              <button data-v="text" class="on">文字作答</button>
+              <button data-v="voice">语音作答</button>
+            </div>
+          </div>
+          <div class="group" id="mockVoiceGroup" hidden>
+            <div class="group-h" data-i18n="mockVoiceStyle">面试官音色</div>
+            <div class="voice-row">
+              <select id="selVoiceSetup" class="pv-preset"></select>
+              <button class="voice-preview" id="btnVoicePreview" title="试听音色"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg><span data-i18n="mockPreview">试听</span></button>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="group-h" data-i18n="kb">知识库</div>
+            <select id="mockProfile" class="pv-preset" style="width: 100%; max-width: 360px"></select>
+          </div>
+          <div class="group">
+            <div class="group-h" data-i18n="mockCount">题目数量</div>
+            <div class="mock-count-row">
+              <div class="seg" id="segMockCount">
+                <button data-v="2">2</button>
+                <button data-v="3">3</button>
+                <button data-v="5" class="on">5</button>
+              </div>
+              <input id="mockCountCustom" class="pv-preset mock-count-input" type="number" min="2" max="20" placeholder="自定义" />
+            </div>
+          </div>
+          <button class="mini btn-primary" id="btnMockStart" style="width: 100%; max-width: 360px" data-i18n="mockStart">开始模拟面试</button>
+          <div class="hint" id="mockHint" style="margin: 8px 0 0"></div>
+        </div>
+
+        <div id="mockRun" hidden>
+          <div class="mock-progress">
+            <span id="mockIdx">1 / 5</span>
+            <span class="sp"></span>
+            <span class="mock-voice-tools" id="mockVoiceTools" hidden>
+              <select id="selVoice" class="pv-preset" title="面试官声线"></select>
+              <button class="ghost" id="btnReplay" data-i18n="mockReplay">重听</button>
+            </span>
+          </div>
+          <div class="mock-q" id="mockQuestion"></div>
+
+          <textarea id="mockAnswer" rows="8" data-i18n-ph="mockAnswerPh" placeholder="在这里写下你的回答，说完再提交…"></textarea>
+
+          <div class="mock-mic" id="mockMicBar" hidden>
+            <button class="mic-btn" id="btnMockMic" data-i18n="mockSpeak">按住说话</button>
+            <span class="hint" style="margin: 0" id="mockMicHint"></span>
+          </div>
+
+          <div class="jd-actions" style="margin-top: 10px">
+            <button class="ghost" id="btnMockEnd" data-i18n="mockExit">退出</button>
+            <button class="ghost" id="btnMockPrev" data-i18n="mockPrev">上一题</button>
+            <button class="ghost" id="btnMockNext" data-i18n="mockNext">下一题</button>
+            <span class="sp"></span>
+            <span class="hint" style="margin: 0" id="mockHint2"></span>
+            <button class="mini btn-primary" id="btnMockFinish" data-i18n="mockFinish">提交作答</button>
+          </div>
+        </div>
+
+        <div id="mockCall" hidden>
+          <div class="call-top">
+            <span class="call-badge" id="callBadge">技术面试 · 第 1/5 题</span>
+            <button class="ghost" id="btnCallHangup" data-i18n="mockExit">退出</button>
+          </div>
+
+          <div class="call-orb" id="callOrb">
+            <div class="orb-wave"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+
+          <div class="call-status" id="callStatus">面试官正在提问…</div>
+
+          <div class="call-stream" id="callStream"></div>
+
+          <div class="call-footer">
+            <button class="call-btn" id="btnCallMute" data-i18n="mockMute">静音</button>
+            <button class="call-btn primary" id="btnCallDone" data-i18n="mockDoneSpeak">我说完了</button>
+            <button class="call-btn danger" id="btnCallEnd" data-i18n="mockEndCall">结束面试</button>
+          </div>
+        </div>
+
+        <div id="mockDone" hidden>
+          <div class="mock-total">
+            <b id="mockTotal">0</b>
+            <span id="mockLevel"></span>
+          </div>
+          <div id="mockDims"></div>
+          <div id="mockAdvice"></div>
+          <div class="jd-actions" style="margin-top: 14px">
+            <button class="ghost" id="btnMockAgain" data-i18n="mockAgain">再来一场</button>
+            <span class="sp"></span>
+            <button class="mini" id="btnMockExport">导出报告</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-models">
+      <div class="page">
+        <h2 class="page-title" data-i18n="models">模型</h2>
+
+        <div class="group">
+          <div class="group-h" data-i18n="currentUsing">当前使用</div>
+          <div class="row" style="padding:10px 12px">
+            <span id="curModelText" style="font-size:13px;color:var(--text-2)">—</span>
+            <span class="sp"></span>
+            <span class="hint" style="margin:0" id="curModelHint"></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="customProviders">自定义供应商</div>
+          <div id="provList"></div>
+          <button class="mini" id="btnProvAdd" style="margin-top:10px"data-i18n="addProvider">＋ 添加供应商</button>
+        </div>
+
+        <div class="group" id="provForm" hidden>
+          <div class="group-h" id="provFormTitle">添加供应商</div>
+          <label class="fld"><span data-i18n="vendor">厂商</span><select id="pvPreset" class="pv-preset"></select></label>
+          <label class="fld"><span data-i18n="name">名称</span><input id="pvName" placeholder="例如 DeepSeek 官方" /></label>
+          <label class="fld"><span>Base URL</span><input id="pvUrl" placeholder="https://api.deepseek.com/v1" /></label>
+          <label class="fld"><span data-i18n="apiKey">API Key</span><input id="pvKey" type="password" placeholder="sk-..." /></label>
+          <label class="fld"><span data-i18n="models">模型</span><input id="pvModels" placeholder="deepseek-chat, deepseek-reasoner" /></label>
+          <div class="jd-actions" style="margin-top:10px">
+            <button class="ghost" id="btnProvTest"data-i18n="testConn">测试连接</button>
+            <span class="sp"></span>
+            <button class="ghost" id="btnProvCancel">取消</button>
+            <button class="mini" id="btnProvSave">保存</button>
+          </div>
+          <div class="hint" id="provTestMsg" style="margin:8px 0 0"></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="panel-settings">
+      <div class="page">
+        <h2 class="page-title" data-i18n="settings">设置</h2>
+
+        <div class="group">
+          <div class="group-h" data-i18n="fontSize">字体大小</div>
+          <div class="seg" id="segFont">
+            <button data-v="0.9" data-i18n="fontSmall">小</button>
+            <button data-v="1" data-i18n="fontNormal">标准</button>
+            <button data-v="1.1" data-i18n="fontLarge">大</button>
+            <button data-v="1.2" data-i18n="fontHuge">特大</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="theme">主题</div>
+          <div class="seg" id="segUiTheme">
+            <button data-v="light" data-i18n="themeLight">浅色</button>
+            <button data-v="dark" data-i18n="themeDark">深色</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="language">系统语言</div>
+          <select id="selLang" class="pv-preset" style="width: 100%">
+            <option value="zh-CN">简体中文</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+            <option value="ko">한국어</option>
+            <option value="de">Deutsch</option>
+            <option value="ru">Русский</option>
+            <option value="fr">Français</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="uiOpacity">界面透明度</div>
+          <div class="slider-row">
+            <input type="range" id="rgUiOpacity" min="30" max="100" value="100" />
+            <span class="val" id="valUiOpacity">100%</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-h" data-i18n="appControl">程序</div>
+          <div class="slider-row">
+            <button class="quit-btn" id="btnQuitApp" data-i18n="quitApp">退出 JobAid</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ------------------------------------------------ 设置栏 -->
+  <aside class="rail" id="rail">
+    <div class="rs">
+      <div class="rs-t" data-i18n="audioSource">音频来源</div>
+      <div class="row"><label for="swSys" data-i18n="sysAudio">系统声音（面试官）</label><span class="switch"><input type="checkbox" id="swSys" checked /><span></span></span></div>
+      <div class="row"><label for="swMic" data-i18n="mic">麦克风（求职者）</label><span class="switch"><input type="checkbox" id="swMic" checked /><span></span></span></div>
+      <div class="meter"><span>面试官</span><i class="lvl" id="barSys"></i><em id="valSys">0</em></div>
+      <div class="meter"><span>求职者</span><i class="lvl" id="barMic"></i><em id="valMic">0</em></div>
+      <div class="ch-stat" id="sysStat"></div>
+      <div class="ch-stat" id="micStat"></div>
+    </div>
+
+    <div class="rs">
+      <div class="rs-t" data-i18n="answer">作答</div>
+      <div class="row"><label for="swAuto" data-i18n="autoAnswer">自动作答</label><span class="switch"><input type="checkbox" id="swAuto" checked /><span></span></span></div>
+      <div class="row"><label data-i18n="answerStyle">作答风格</label></div>
+      <div class="seg" id="segStyle">
+        <button data-v="bullet" class="on" data-i18n="styleBullet">要点</button>
+        <button data-v="spoken" data-i18n="styleSpoken">口语</button>
+        <button data-v="star">STAR</button>
+      </div>
+    </div>
+
+    <div class="rs">
+      <div class="rs-t" data-i18n="overlay">悬浮窗</div>
+      <div class="row"><label for="swStealth" data-i18n="overlayHide">悬浮窗隐身</label><span class="switch"><input type="checkbox" id="swStealth" /><span></span></span></div>
+      <div class="row"><label for="swKeys" data-i18n="hotkeys">快捷键显示</label><span class="switch"><input type="checkbox" id="swKeys" /><span></span></span></div>
+      <div class="keys" id="keyList">
+        <div class="key"><kbd>Ctrl+Shift+H</kbd><span>显隐悬浮窗</span></div>
+        <div class="key"><kbd>Ctrl+Shift+M</kbd><span>监听开关</span></div>
+        <div class="key"><kbd>Ctrl+Shift+O</kbd><span>打开控制台</span></div>
+        <div class="key"><kbd>Ctrl+Shift+J</kbd><span>重新作答</span></div>
+        <div class="key"><kbd>Ctrl+Shift+K</kbd><span>清空上下文</span></div>
+      </div>
+      <div class="row"><label data-i18n="overlayTheme">主题</label>
+        <div class="seg" id="segTheme"><button data-v="dark" class="on">深</button><button data-v="light">浅</button></div>
+      </div>
+      <div class="row"><label for="rgOpacity" data-i18n="opacity">透明度</label><input type="range" id="rgOpacity" min="40" max="100" value="95" /><span class="val" id="valOpacity">95%</span></div>
+    </div>
+
+    <div class="rs">
+      <div class="rs-t" data-i18n="interviewNotes">面经</div>
+      <div class="seg" id="segExport" style="margin-bottom: 8px">
+        <button data-v="md" class="on">Markdown</button>
+        <button data-v="pdf">PDF</button>
+        <button data-v="doc">Word</button>
+      </div>
+      <button class="mini" id="btnExport" style="width: 100%; margin-top: 8px" data-i18n="exportNow">导出本场面经</button>
+      <div class="hint" id="exportHint" style="margin: 6px 0 0"></div>
+    </div>
+
+    <div class="rs">
+      <div class="rs-t" data-i18n="guard">屏幕防护</div>
+      <div class="row"><label for="swFullStealth" data-i18n="fullStealth">后台隐藏</label><span class="switch"><input type="checkbox" id="swFullStealth" /><span></span></span></div>
+      <div class="hint stealth-hint" data-i18n="fullStealthHint">开启后任务栏和托盘都不显示，按 Ctrl+Shift+O 找回</div>
+      <button class="guard-btn" id="btnGuard"><b id="guardLabel" data-i18n="guardOn">隐藏窗口</b></button>
+      <div class="test-out" id="testOut"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="audio-engine.js"></script>
+<script src="i18n.js"></script>
+<script src="console.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; width: 900px; height: 560px; background: #F6F7FB;
+    font: 14px/1.6 "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif; color: #1b1b22;
+    display: flex; flex-direction: column; padding: 34px 38px;
+  }
+  .top { display: flex; align-items: center; gap: 26px; }
+  .big { width: 148px; height: 148px; display: block; filter: drop-shadow(0 14px 26px rgba(16,18,26,.24)); }
+  .name { font-size: 40px; font-weight: 650; letter-spacing: -.5px; line-height: 1.1; }
+  .sub { color: #6f7688; font-size: 15px; margin-top: 6px; }
+  .tagline { color: #9aa1b1; font-size: 13px; margin-top: 12px; }
+  .grid { display: flex; gap: 14px; margin-top: 34px; align-items: flex-end; }
+  .cell { text-align: center; }
+  .cell img { display: block; margin: 0 auto 8px; }
+  .cell span { color: #8b91a1; font-size: 11.5px; }
+  .bars { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
+  .bar { display: flex; align-items: center; gap: 18px; padding: 12px 18px; border-radius: 12px; }
+  .bar.light { background: #fff; border: 1px solid #e8e8ee; }
+  .bar.dark { background: #17181d; }
+  .bar.dark .lbl { color: #aeb4c4; }
+  .lbl { color: #8b91a1; font-size: 12px; width: 76px; flex: none; }
+  .bar img { display: block; }
+  .side { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 650; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img class="big" src="../build/logo.svg">
+    <div>
+      <div class="name">JobAid</div>
+      <div class="sub">面试实时助理 · Job + Aid</div>
+      <div class="tagline">听清问题，给出可以直接说出口的答案</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="cell"><img src="../build/logo.svg" width="64" height="64"><span>64</span></div>
+    <div class="cell"><img src="../build/logo.svg" width="48" height="48"><span>48</span></div>
+    <div class="cell"><img src="../build/logo.svg" width="32" height="32"><span>32</span></div>
+    <div class="cell"><img src="../build/logo.svg" width="24" height="24"><span>24</span></div>
+    <div class="cell"><img src="../build/logo.svg" width="16" height="16"><span>16</span></div>
+  </div>
+
+  <div class="bars">
+    <div class="bar light">
+      <span class="lbl">浅色界面</span>
+      <div class="side"><img src="../build/logo.svg" width="20" height="20">JobAid</div>
+      <img src="../build/logo.svg" width="32" height="32">
+      <img src="../build/logo.svg" width="16" height="16">
+    </div>
+    <div class="bar dark">
+      <span class="lbl">深色背景</span>
+      <div class="side" style="color:#fff"><img src="../build/logo.svg" width="20" height="20">JobAid</div>
+      <img src="../build/logo.svg" width="32" height="32">
+      <img src="../build/logo.svg" width="16" height="16">
+    </div>
+  </div>
+</body>
+</html>

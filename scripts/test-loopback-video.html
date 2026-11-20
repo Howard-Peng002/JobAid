@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>lb</title></head>
+<body>
+<audio id="a" loop></audio>
+<script>
+window.__play = function (u) {
+  var a = document.getElementById('a');
+  a.src = u;
+  return a.play().then(function () { return 'ok'; }).catch(function (e) { return 'err:' + e.message; });
+};
+
+window.__capture = async function (mode, ms) {
+  var s = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 2 }, audio: true });
+  var at = s.getAudioTracks();
+  var vt = s.getVideoTracks();
+  if (mode === 'disableVideo') vt.forEach(function (t) { t.enabled = false; });
+  if (mode === 'stopVideo') vt.forEach(function (t) { t.stop(); });
+  if (!at.length) return { error: '没有音频轨', videoTracks: vt.length };
+
+  var ctx = new AudioContext();
+  var src = ctx.createMediaStreamSource(new MediaStream(at));
+  var proc = ctx.createScriptProcessor(2048, 1, 1);
+  var acc = 0, n = 0;
+  proc.onaudioprocess = function (e) {
+    var d = e.inputBuffer.getChannelData(0);
+    var sum = 0;
+    for (var i = 0; i < d.length; i++) sum += d[i] * d[i];
+    acc += Math.sqrt(sum / d.length);
+    n++;
+  };
+  src.connect(proc);
+  var g = ctx.createGain();
+  g.gain.value = 0;
+  proc.connect(g);
+  g.connect(ctx.destination);
+
+  await new Promise(function (r) { setTimeout(r, ms); });
+  var rms = acc / Math.max(1, n);
+  s.getTracks().forEach(function (t) { t.stop(); });
+  ctx.close();
+  return { rms: +rms.toFixed(5), videoTracks: vt.length, audioTracks: at.length, ctxRate: ctx.sampleRate };
+};
+</script>
+</body>
+</html>

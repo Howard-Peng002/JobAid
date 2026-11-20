@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>模拟面试官</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #14161d; color: #e9ebf2; height: 100vh;
+    display: flex; flex-direction: column; padding: 18px 20px 16px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .top { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #8b93a7; }
+  .badge { background: #23262f; border-radius: 6px; padding: 3px 8px; }
+  .cat { color: #9aa4c8; }
+  .spacer { flex: 1; }
+  .q {
+    flex: 1; display: flex; align-items: center;
+    font-size: 21px; line-height: 1.6; letter-spacing: .2px;
+    padding: 14px 2px;
+  }
+  .hint {
+    font-size: 11.5px; line-height: 1.7; color: #767e94;
+    border-left: 2px solid #33384a; padding-left: 10px; margin-bottom: 14px;
+  }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  button {
+    font: inherit; font-size: 13px; height: 34px; padding: 0 14px;
+    border-radius: 8px; border: 1px solid #2e3341; background: #1d2029;
+    color: #d7dbe8; cursor: pointer;
+  }
+  button:hover { background: #262a36; }
+  button.primary { background: #4f5bd5; border-color: #4f5bd5; color: #fff; }
+  button.primary:hover { background: #5a66e0; }
+  button:disabled { opacity: .45; cursor: default; }
+  label.auto { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8b93a7; }
+  input[type=number] {
+    width: 52px; height: 28px; font: inherit; font-size: 12px; text-align: center;
+    background: #1d2029; border: 1px solid #2e3341; border-radius: 6px; color: #d7dbe8;
+  }
+  .status { font-size: 11.5px; color: #6f778c; margin-top: 10px; height: 16px; }
+  .status.live { color: #6fbf8b; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="badge" id="prog">1 / 14</span>
+    <span class="cat" id="cat">开场</span>
+    <span class="spacer"></span>
+    <span id="engine">中文音色</span>
+  </div>
+
+  <div class="q" id="q">准备中…</div>
+  <div class="hint" id="hint"></div>
+
+  <div class="bar">
+    <button class="primary" id="btnSpeak">朗读本题</button>
+    <button id="btnPrev">上一题</button>
+    <button id="btnNext">下一题</button>
+    <span class="spacer" style="flex:1"></span>
+    <label class="auto"><input type="checkbox" id="chkAuto" /> 自动连问</label>
+    <input type="number" id="gap" value="14" min="6" max="60" title="每题间隔秒数" />
+  </div>
+
+  <div class="status" id="status">空格键朗读，左右方向键切题</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+const $ = (id) => document.getElementById(id);
+let current = null;
+let speaking = false;
+
+window.speakNow = function (text, rate) {
+  return new Promise((resolve) => {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const vs = speechSynthesis.getVoices();
+      const pick = vs.find((v) => /zh/i.test(v.lang)) || vs[0];
+      if (pick) { u.voice = pick; u.lang = pick.lang; }
+      u.rate = rate || 1.05;
+      u.pitch = 1;
+      u.onend = () => resolve('ended');
+      u.onerror = (e) => resolve('error:' + (e.error || 'unknown'));
+      speechSynthesis.speak(u);
+      // 兜底：万一 onend 不触发
+      const est = Math.max(4000, text.length * 320);
+      setTimeout(() => resolve('timeout'), est + 8000);
+    } catch (e) {
+      resolve('throw:' + e.message);
+    }
+  });
+};
+
+window.stopSpeak = () => { try { speechSynthesis.cancel(); } catch (_) {} };
+
+ipcRenderer.on('q', (_e, d) => {
+  current = d;
+  $('prog').textContent = `${d.index + 1} / ${d.total}`;
+  $('cat').textContent = d.cat || '';
+  $('q').textContent = d.text;
+  $('hint').textContent = d.hint || '';
+  $('btnPrev').disabled = d.index === 0;
+  $('btnNext').disabled = d.index >= d.total - 1;
+});
+
+ipcRenderer.on('status', (_e, s) => {
+  $('status').textContent = s.text || '';
+  $('status').className = 'status' + (s.live ? ' live' : '');
+});
+
+$('btnSpeak').onclick = () => ipcRenderer.send('cmd', 'speak');
+$('btnPrev').onclick = () => ipcRenderer.send('cmd', 'prev');
+$('btnNext').onclick = () => ipcRenderer.send('cmd', 'next');
+$('chkAuto').onchange = (e) => ipcRenderer.send('cmd', e.target.checked ? 'auto-on' : 'auto-off');
+$('gap').onchange = (e) => ipcRenderer.send('gap', Number(e.target.value) || 14);
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); ipcRenderer.send('cmd', 'speak'); }
+  if (e.code === 'ArrowRight') ipcRenderer.send('cmd', 'next');
+  if (e.code === 'ArrowLeft') ipcRenderer.send('cmd', 'prev');
+  if (e.code === 'Escape') ipcRenderer.send('cmd', 'quit');
+});
+
+speechSynthesis.onvoiceschanged = () => {
+  const vs = speechSynthesis.getVoices();
+  const zh = vs.find((v) => /zh/i.test(v.lang));
+  $('engine').textContent = zh ? zh.name.replace(/^Microsoft\s*/, '').replace(/\s*-\s*Chinese.*$/, '') : '系统音色';
+};
+
+ipcRenderer.send('ui:ready');
+</script>
+</body>
+</html>
